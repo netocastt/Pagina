@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arquitectura Cliente-Servidor y Servidores Web</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Poppins:wght@400;600&display=swap');
+
+body {font-family:'Poppins',sans-serif;margin:0;background:linear-gradient(to right,#1a1a1a,#2c2c2c);color:#fff;scroll-behavior:smooth;}
+h1,h2{font-family:'Orbitron',sans-serif;}
+h1{font-size:1.7em;background:linear-gradient(to right,#ff6ec4,#1dd1a1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 1px rgba(0,0,0,0.5);text-align:center;margin:10px 0;}
+h2{font-size:1.4em;color:#1dd1a1;border-bottom:2px solid #ff6ec4;padding-bottom:6px;text-transform:uppercase;letter-spacing:1px;text-shadow:1px 1px 2px rgba(0,0,0,0.6);}
+#progressBar{position:fixed;top:0;left:0;height:5px;background:linear-gradient(to right,#ff6ec4,#1dd1a1);width:0%;z-index:9999;}
+header{
+  /* Se quitó sticky para que el menú baje con el contenido */
+  z-index:1000;
+  background:linear-gradient(90deg,#ff6ec4,#1dd1a1);
+  color:white;
+  padding:10px 5px;
+  box-shadow:0 3px 10px rgba(0,0,0,0.3);
+}
+nav{text-align:center;margin-top:6px;}
+nav a{color:white;margin:0 5px;text-decoration:none;font-weight:bold;padding:4px 8px;border-radius:6px;transition:all 0.3s ease;font-size:0.9em;}
+nav a:hover{background:rgba(255,255,255,0.2);color:#222;}
+main{padding:15px;}
+section{background:#222;margin:25px auto;padding:30px 25px;max-width:950px;border-radius:15px;box-shadow:0 4px 12px rgba(0,0,0,0.4);opacity:0;transform:translateY(30px);transition:opacity 1s ease, transform 1s ease;}
+section.visible{opacity:1;transform:translateY(0);}
+p,li{font-size:1em;line-height:1.6;text-shadow:1px 1px 2px rgba(0,0,0,0.4);}
+ul li, ol li{margin-bottom:8px;}
+.image{width:100%;border-radius:10px;margin-top:15px;box-shadow:0 3px 10px rgba(0,0,0,0.4);transition:transform 0.3s ease;}
+.image:hover{transform:scale(1.02);}
+pre{background:rgba(255,255,255,0.1);padding:10px;border-radius:8px;overflow-x:auto;font-family:'Courier New',monospace;font-size:0.95em;}
+#btnUp{position:fixed;bottom:25px;right:25px;background:#ff6ec4;color:white;border:none;border-radius:50%;width:50px;height:50px;cursor:pointer;font-size:22px;display:none;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,0.3);transition:all 0.3s ease;}
+#btnUp:hover{background:#1dd1a1;color:#222;transform:scale(1.1);}
+footer{text-align:center;background:#111;color:#aaa;padding:15px;margin-top:30px;font-size:0.9em;}
+@media (max-width:700px){nav a{display:block;margin:4px 0;}header h1{font-size:1.4em;}}
+
+/* Mapa conceptual */
+#mapaCanvas{position:relative;width:100%;height:400px;background:#111;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.5);overflow:hidden;margin-top:20px;}
+.node{position:absolute;padding:15px 20px;border-radius:12px;background:#1dd1a1;color:#111;text-align:center;cursor:pointer;transition:all 0.3s ease;}
+.node:hover{transform:scale(1.05);background:#ff6ec4;color:#fff;z-index:5;}
+.tooltip{position:absolute;bottom:110%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:8px;border-radius:6px;width:180px;font-size:0.85em;text-align:center;visibility:hidden;opacity:0;transition:opacity 0.3s;}
+.node:hover .tooltip{visibility:visible;opacity:1;}
+canvas.mapLineCanvas{position:absolute;top:0;left:0;z-index:0;width:100%;height:100%;}
+
+/* Infografía Animada */
+#infografiaSection{position:relative;width:100%;max-width:950px;height:400px;background:#111;margin:auto;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.5);overflow:hidden;}
+.inf-node{position:absolute;width:120px;height:60px;background:#ff6ec4;border-radius:12px;text-align:center;line-height:60px;font-weight:bold;color:#fff;transition:all 0.5s;font-size:0.9em;}
+
+/* CANVA links styling */
+.canva-link{display:block;background:linear-gradient(90deg,#1dd1a1,#ff6ec4);color:#111;font-weight:700;padding:12px 16px;border-radius:10px;text-decoration:none;margin:12px 0;box-shadow:0 4px 18px rgba(255,110,196,0.12);transition:transform .18s ease}
+.canva-link:hover{transform:translateY(-4px);color:#fff}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+<header>
+<h1>Arquitectura Cliente-Servidor y Servidores Web</h1>
+<nav>
+<a href="#modelo" class="nav-link">Cliente-Servidor</a>
+<a href="#hardware" class="nav-link">Hardware</a>
+<a href="#servidores" class="nav-link">Servidores HTTP</a>
+<a href="#lenguajes" class="nav-link">Lenguajes</a>
+<a href="#sgbd" class="nav-link">SGBD</a>
+<a href="#integracion" class="nav-link">Integración</a>
+<a href="#mapa" class="nav-link">Mapa</a>
+<a href="#infografia" class="nav-link">Infografía</a>
+<a href="#canva" class="nav-link">Canva</a>
+<a href="#referencias" class="nav-link">Fuentes</a>
+</nav>
+</header>
+
+<main>
+
+<!-- Modelo Cliente-Servidor -->
+<section id="modelo">
+<h2>Modelo Cliente-Servidor</h2>
+<p>El modelo Cliente-Servidor es una arquitectura donde <strong>clientes</strong> envían solicitudes y <strong>servidores</strong> procesan y responden con recursos o información. Es la base de la mayoría de aplicaciones web y móviles.</p>
+<h3>Proceso de comunicación</h3>
+<ol>
+<li><strong>Cliente envía solicitud:</strong> HTTP/HTTPS desde navegador o app.</li>
+<li><strong>Servidor recibe:</strong> Procesa la solicitud y ejecuta scripts del lado del servidor.</li>
+<li><strong>Servidor consulta base de datos:</strong> Si requiere información dinámica.</li>
+<li><strong>Servidor genera respuesta:</strong> HTML, JSON, XML, etc.</li>
+<li><strong>Cliente recibe:</strong> Renderiza contenido y presenta al usuario.</li>
+</ol>
+<p>En resumen, cada solicitud del cliente activa un proceso completo donde el servidor puede procesar datos, consultar bases de datos y devolver resultados al cliente de forma rápida y segura, permitiendo aplicaciones dinámicas y personalizadas.</p>
+<img src="https://cdn-icons-png.flaticon.com/512/2910/2910761.png" class="image" alt="Modelo Cliente-Servidor">
+</section>
+
+<!-- Hardware mínimo -->
+<section id="hardware">
+<h2>Hardware mínimo para Servidores</h2>
+<p>El hardware necesario depende de la función y carga esperada de cada servidor.</p>
+<ul>
+<li><strong>CPU/Procesador:</strong> 2-8 núcleos según tipo de servidor.</li>
+<li><strong>RAM:</strong> 4GB mínimo, 32GB recomendado para bases de datos y servidores de aplicaciones.</li>
+<li><strong>Almacenamiento:</strong> SSD mínimo 120GB; RAID para redundancia y seguridad de datos.</li>
+<li><strong>Red:</strong> Conexión 1Gbps mínima, baja latencia y redundancia si es crítico.</li>
+</ul>
+<h3>Especificaciones según tipo de servidor</h3>
+<ul>
+<li><strong>Servidor Web:</strong> CPU 2-4 núcleos, 8GB RAM, 100GB SSD.</li>
+<li><strong>Servidor BD:</strong> CPU 4-8 núcleos, 16-32GB RAM, 250GB SSD+RAID.</li>
+<li><strong>Servidor Aplicaciones:</strong> CPU 4 núcleos, 8-16GB RAM, 200GB SSD.</li>
+<li><strong>Servidor Correo:</strong> CPU 2-4 núcleos, 8GB RAM, 100GB SSD.</li>
+</ul>
+<p>Estos recursos aseguran que cada tipo de servidor funcione de manera óptima, soportando múltiples solicitudes simultáneas sin afectar el rendimiento, garantizando estabilidad y tiempos de respuesta eficientes.</p>
+</section>
+
+<!-- Servidores HTTP -->
+<section id="servidores">
+<h2>Servidores HTTP</h2>
+<p>Un servidor HTTP entrega contenido web a clientes mediante protocolos HTTP/HTTPS.</p>
+<ul>
+<li><strong>Apache:</strong> Flexible, extensible, soporta módulos y .htaccess.</li>
+<li><strong>Nginx:</strong> Ligero, rápido, eficiente en conexiones concurrentes.</li>
+<li><strong>IIS:</strong> Integrado en Windows, administración sencilla.</li>
+<li><strong>Lighttpd:</strong> Ligero, alto rendimiento para sitios pequeños.</li>
+<li><strong>Caddy:</strong> Configuración automática de SSL, fácil de usar.</li>
+</ul>
+<h3>Funciones principales:</h3>
+<ul>
+<li>Manejo de solicitudes HTTP/HTTPS.</li>
+<li>Balanceo de carga y caché.</li>
+<li>Registro de logs y control de errores.</li>
+<li>Seguridad: certificados SSL/TLS, protección contra ataques comunes.</li>
+</ul>
+<h3>Comparativa:</h3>
+<p><strong>Apache:</strong> Muy configurable, ideal para entornos con módulos complejos.<br>
+<strong>Nginx:</strong> Mejor rendimiento bajo alta concurrencia, eficiente en memoria y CPU.</p>
+<p>En conjunto, los servidores HTTP permiten que los clientes accedan a los recursos de manera rápida, segura y estable, formando la base de la comunicación web.</p>
+</section>
+
+<!-- Lenguajes de Servidor -->
+<section id="lenguajes">
+<h2>Lenguajes de Servidor</h2>
+<p>Lenguajes que se ejecutan en el servidor para generar contenido dinámico y gestionar la lógica de negocio.</p>
+<ul>
+<li><strong>PHP:</strong> Fácil integración, gran comunidad. Desventaja: consumo de memoria elevado en grandes cargas.</li>
+<li><strong>Python (Django/Flask):</strong> Código limpio y legible, frameworks robustos. Desventaja: menor rendimiento que Node.js en tiempo real.</li>
+<li><strong>Node.js:</strong> JavaScript en servidor, eficiente para apps en tiempo real. Desventaja: manejo de CPU intensivo limitado.</li>
+<li><strong>Ruby on Rails:</strong> Desarrollo rápido de aplicaciones web. Desventaja: consumo de memoria relativamente alto.</li>
+<li><strong>Java (Spring):</strong> Robusto, escalable, ideal para empresas. Desventaja: curva de aprendizaje alta.</li>
+<li><strong>Go:</strong> Muy eficiente, compilado, para microservicios. Desventaja: comunidad menor que PHP/Python.</li>
+</ul>
+<h3>Ejemplos de código:</h3>
+<pre>&lt;?php echo "Hola desde PHP"; ?&gt;</pre>
+<pre>console.log("Hola desde Node.js");</pre>
+<pre>print("Hola desde Python")</pre>
+<p>Estos lenguajes permiten que el servidor procese solicitudes de manera dinámica, interactúe con bases de datos y genere respuestas adaptadas a cada cliente, formando el núcleo de la lógica de aplicaciones web modernas.</p>
+</section>
+
+<!-- SGBD -->
+<section id="sgbd">
+<h2>Sistemas Gestores de Bases de Datos (SGBD)</h2>
+<p>Permiten almacenar, organizar y acceder a datos de manera eficiente y segura.</p>
+<ul>
+<li><strong>Relacionales:</strong> MySQL, PostgreSQL, Oracle. Datos en tablas con relaciones definidas, cumplen ACID.</li>
+<li><strong>NoSQL:</strong> MongoDB, Firebase, Redis. Datos en documentos, clave-valor o grafos, escalables horizontalmente.</li>
+<li><strong>Rol en aplicaciones web:</strong> Gestionan la persistencia de datos, consultas, transacciones y seguridad.</li>
+</ul>
+<h3>Tipos y ejemplos:</h3>
+<ul>
+<li><strong>Relacionales:</strong> MySQL, PostgreSQL, Oracle, SQL Server.</li>
+<li><strong>NoSQL:</strong> MongoDB, Redis, Firebase, Cassandra.</li>
+</ul>
+<p>Los SGBD garantizan que la información utilizada por las aplicaciones web esté organizada, accesible y segura, permitiendo que los lenguajes de servidor generen contenido dinámico de manera confiable y eficiente.</p>
+</section>
+
+<!-- Integración de conceptos -->
+<section id="integracion">
+<h2>Integración de Conceptos</h2>
+<p>Todos los componentes de una arquitectura web trabajan juntos de forma coordinada:</p>
+<ol>
+<li>El cliente envía una solicitud HTTP/HTTPS.</li>
+<li>El servidor recibe la solicitud y ejecuta el código del lenguaje de servidor correspondiente.</li>
+<li>Si se requiere información dinámica, el servidor consulta la base de datos.</li>
+<li>El servidor procesa los datos y genera la respuesta.</li>
+<li>El cliente recibe la respuesta y renderiza el contenido para el usuario final.</li>
+</ol>
+<p>Este flujo garantiza que cada parte —cliente, servidor, lenguaje de programación y base de datos— interactúe eficientemente, entregando aplicaciones web rápidas, seguras y dinámicas. Además, permite escalar y mantener sistemas complejos, integrando todos los componentes en un solo proceso coherente.</p>
+<img src="https://cdn-icons-png.flaticon.com/512/1020/1020441.png" class="image" alt="Integración de componentes">
+</section>
+
+<!<!-- Mapa Conceptual -->
+<section id="mapa">
+<h2>Mapa Conceptual</h2>
+<div id="mapaCanvas" onclick="abrirModal()">
+  <div class="node" id="nCliente" style="top:10%; left:5%;">Cliente<div class="tooltip">Solicita recursos</div></div>
+  <div class="node" id="nServidor" style="top:10%; left:65%;">Servidor<div class="tooltip">Procesa solicitudes</div></div>
+  <div class="node" id="nBD" style="top:60%; left:35%;">Base de Datos<div class="tooltip">Almacena información</div></div>
+  <canvas class="mapLineCanvas"></canvas>
+</div>
+</section>
+
+<!-- Imagen relacionada con el Mapa -->
+<section id="mapaImagen" class="section">
+<h2>Imagen del Mapa</h2>
+<div style="text-align:center;">
+  <img src="imagen1.jpg" alt="Imagen explicativa" class="image" style="max-width:80%; height:auto;">
+  <p style="margin-top:10px; color:#aaa;"
+  <div style="text-align:center;">
+  <img src="imagen2.jpg" alt="Imagen explicativa" class="image" style="max-width:80%; height:auto;">
+  <p style="margin-top:10px; color:#aaa;
+  >Descripción o título de la imagen relacionada con el mapa conceptual</p>
+</div>
+</section>
+
+<!-- 🔹 Modal agregado -->
+<div id="infoModal" class="modal">
+  <div class="modal-content">
+    <h3>Información del Mapa</h3>
+    <p>
+      Este mapa conceptual animado representa la conexión entre el <strong>cliente</strong>, el <strong>servidor</strong> y la <strong>base de datos</strong>, 
+      mostrando cómo se comunican para procesar y responder solicitudes dentro de la arquitectura Cliente-Servidor.
+    </p>
+
+  </div>
+</div>
+<!-- Infografía Animada no perder-->
+<section id="infografia">
+<h2>Infografía Animada</h2>
+<div id="infografiaSection">
+  <div class="inf-node" id="clienteInf" style="top:15%; left:5%;">Cliente</div>
+  <div class="inf-node" id="servidorInf" style="top:15%; left:65%;">Servidor</div>
+  <div class="inf-node" id="respuestaInf" style="top:65%; left:35%;">Respuesta</div>
+  <canvas id="flowCanvas" width="1000" height="400"></canvas>
+</div>
+</section>
+
+<section id="canva">
+  <h2>Diseños en Canva</h2>
+  <p style="color:#bbb">Recursos visuales complementarios (abre en nueva pestaña):</p>
+  
+  <a class="canva-link" href="https://www.canva.com/design/DAG1KO1nRLk/VLN1hKkksL3w6RA_3RNJoQ/edit?utm_content=DAG1KO1nRLk&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" target="_blank" rel="noopener">
+    🎨 Presentación: Servidores Web e Integración
+  </a>
+
+  <a class="canva-link" href="https://www.canva.com/design/DAG1DQs2dZI/SnRfN89vjPsXfOt0slth2g/view?utm_content=DAG1DQs2dZI&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h90fe68287b" target="_blank" rel="noopener">
+    📘 Infografía: Arquitectura Cliente-Servidor
+  </a>
+
+  <!-- Nuevo link agregado -->
+  <a class="canva-link" href="https://www.canva.com/design/DAG1Q2NTtOw/31FHgrE1l597afj17tpLZQ/edit?utm_content=DAG1Q2NTtOw&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" target="_blank" rel="noopener">
+    🖼 Investigacion: Los HPP
+  </a>
+
+  <p style="color:#bbb;margin-top:8px">Estos enlaces son complementarios y te llevan a los diseños en Canva.</p>
+</section>
+
+<!-- Fuentes -->
+<section id="referencias">
+<h2>Fuentes</h2>
+<ul>
+<li>https://www.w3schools.com</li>
+<li>https://developer.mozilla.org</li>
+<li>https://www.postgresql.org/docs/</li>
+<li>https://nodejs.org/en/docs/</li>
+<li>https://www.apache.org</li>
+<li>https://www.mongodb.com/docs/</li>
+<li>https://medium.com/</li>
+<li>https://dev.to/</li>
+<li>https://www.php.net/docs.php</li>
+<li>https://rubyonrails.org/</li>
+</ul>
+</section>
+
+<footer>
+<p>© 2025 Proyecto Educativo | Elaborado por Ernesto Castillo Benitez
+Oscar Joel Cote Rebollo
+Ashly Guadalupe Saldaña Perez
+Jaqueline Sanchez Teoyotl</p>
+</footer>
+<button id="btnUp" onclick="scrollToTop()">↑</button>
+
+<script>
+// Scroll, barra de progreso y botón subir
+const sections=document.querySelectorAll("section");
+window.addEventListener("scroll",()=>{
+  const scrollTop=window.scrollY;
+  const windowHeight=window.innerHeight;
+  sections.forEach(section=>{
+    if(scrollTop+windowHeight>section.offsetTop+50){
+      section.classList.add("visible");
+    }
+  });
+  const docHeight=document.body.scrollHeight-window.innerHeight;
+  document.getElementById("progressBar").style.width=(scrollTop/docHeight*100)+"%";
+  document.getElementById("btnUp").style.display=scrollTop>300?"flex":"none";
+});
+
+document.querySelectorAll(".nav-link").forEach(link=>{
+  link.addEventListener("click",e=>{
+    e.preventDefault();
+    const target=document.querySelector(link.getAttribute("href"));
+    const offsetPosition=target.offsetTop-document.querySelector('header').offsetHeight-5;
+    window.scrollTo({top:offsetPosition,behavior:'smooth'});
+  });
+});
+
+function scrollToTop(){window.scrollTo({top:0,behavior:"smooth"});}
+
+// Mapa Conceptual
+const mapCanvas=document.querySelector("canvas.mapLineCanvas");
+const ctx=mapCanvas.getContext("2d");
+const mapNodes=[document.getElementById("nCliente"),document.getElementById("nServidor"),document.getElementById("nBD")];
+
+function drawMap(){
+  mapCanvas.width=mapCanvas.parentElement.offsetWidth;
+  mapCanvas.height=mapCanvas.parentElement.offsetHeight;
+  ctx.clearRect(0,0,mapCanvas.width,mapCanvas.height);
+  const positions=mapNodes.map(n=>{
+    const parentRect=n.parentNode.getBoundingClientRect();
+    const rect=n.getBoundingClientRect();
+    return {x:rect.left-parentRect.left+rect.width/2,y:rect.top-parentRect.top+rect.height/2};
+  });
+  ctx.strokeStyle='rgba(29,209,161,0.8)';
+  ctx.lineWidth=3;
+  drawArrow(positions[0],positions[1]);
+  drawArrow(positions[1],positions[2]);
+  drawArrow(positions[2],positions[0]);
+}
+
+function drawArrow(from,to){
+  ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.lineTo(to.x,to.y);ctx.stroke();
+  const dx=to.x-from.x,dy=to.y-from.y,angle=Math.atan2(dy,dx),headlen=10;
+  ctx.beginPath();ctx.moveTo(to.x,to.y);
+  ctx.lineTo(to.x-headlen*Math.cos(angle-Math.PI/6),to.y-headlen*Math.sin(angle-Math.PI/6));
+  ctx.lineTo(to.x-headlen*Math.cos(angle+Math.PI/6),to.y-headlen*Math.sin(angle+Math.PI/6));
+  ctx.lineTo(to.x,to.y);ctx.fillStyle='rgba(29,209,161,0.8)';ctx.fill();
+}
+
+window.addEventListener('resize',drawMap);
+drawMap();
+
+// Infografía Animada
+const flowCanvas=document.getElementById('flowCanvas');
+const fctx=flowCanvas.getContext('2d');
+const nodes=[document.getElementById('clienteInf'),document.getElementById('servidorInf'),document.getElementById('respuestaInf')];
+let t=0;
+
+function drawFlow(){
+  flowCanvas.width=flowCanvas.parentElement.offsetWidth;
+  flowCanvas.height=flowCanvas.parentElement.offsetHeight;
+  fctx.clearRect(0,0,flowCanvas.width,flowCanvas.height);
+  const positions=nodes.map(n=>{
+    const parentRect=n.parentNode.getBoundingClientRect();
+    const rect=n.getBoundingClientRect();
+    return {x:rect.left-parentRect.left+rect.width/2,y:rect.top-parentRect.top+rect.height/2};
+  });
+  fctx.strokeStyle='rgba(29,209,161,0.8)';
+  fctx.lineWidth=3;
+  drawArrowFlow(positions[0],positions[1],t);
+  drawArrowFlow(positions[1],positions[2],t+50);
+  drawArrowFlow(positions[2],positions[0],t+100);
+  t=(t+2)%1000;
+  requestAnimationFrame(drawFlow);
+}
+
+function drawArrowFlow(from,to,phase){
+  const dx=to.x-from.x, dy=to.y-from.y;
+  const pct=(phase%1000)/1000;
+  const cx=from.x+dx*pct, cy=from.y+dy*pct;
+  fctx.beginPath(); fctx.moveTo(from.x,from.y); fctx.lineTo(to.x,to.y); fctx.stroke();
+  fctx.beginPath(); fctx.arc(cx,cy,6,0,Math.PI*2); fctx.fillStyle='rgba(255,255,255,0.8)'; fctx.fill();
+  const angle=Math.atan2(dy,dx); const headlen=10;
+  fctx.beginPath();
+  fctx.moveTo(to.x,to.y);
+  fctx.lineTo(to.x-headlen*Math.cos(angle-Math.PI/6),to.y-headlen*Math.sin(angle-Math.PI/6));
+  fctx.lineTo(to.x-headlen*Math.cos(angle+Math.PI/6),to.y-headlen*Math.sin(angle+Math.PI/6));
+  fctx.lineTo(to.x,to.y);
+  fctx.fillStyle='rgba(29,209,161,0.8)'; fctx.fill();
+}
+
+window.addEventListener('resize',drawFlow);
+drawFlow();
+</script>
+</body>
+</html>
